@@ -1,0 +1,127 @@
+<?php
+
+    define('DB_NAME','graduation');
+    define('DB_USER','root');
+    define('DB_PASSWORD','');
+    define('DB_HOST','localhost');
+
+    $con = new mysqli(DB_HOST, DB_USER, DB_PASSWORD, DB_NAME);
+
+    $SQL= 'SET CHARACTER SET utf8';
+mysqli_query($con,$SQL);
+
+$info=array();
+
+  if($_SERVER['REQUEST_METHOD']=='POST'){
+             if(isset($_POST['id'])){
+
+$id=$_POST['id'];
+
+$stu_stmt= "select notifiction.Notification_Contents, notifiction.URL ,notifiction.Image,notifiction.File,notifiction.Student_Affairs_ID,notifiction.Teaching_staff_id from notifiction";
+
+
+$result = mysqli_query($con, $stu_stmt);
+
+ if (mysqli_num_rows($result) > 0) {
+ while($row = mysqli_fetch_assoc($result))
+ {
+
+
+  if($row['Teaching_staff_id']!= null){
+      $name=$row['Teaching_staff_id'];
+
+                    $stu_stmt2="select teaching_staff.Teaching_Staff_Name from teaching_staff where teaching_staff.Teaching_Staff_ID=$name";
+                         $result2 = mysqli_query($con, $stu_stmt2);
+                           while($row = mysqli_fetch_assoc($result2)) {
+
+              
+                                                        
+$stmt=$con->prepare( "select notifiction.Notification_Contents, notifiction.URL ,notifiction.Image,notifiction.File,teaching_staff.Teaching_Staff_Name from notifiction join student_notification JOIN teaching_staff where notifiction.Notification_ID=student_notification.notification_id and student_notification.student_id= $id  and notifiction.Teaching_staff_id = teaching_staff.Teaching_Staff_ID ORDER by notifiction.Notification_ID DESC ");
+    
+ $stmt->bind_result($Notification_Contents,$URL,$Image,$File,$Teaching_Staff_Name);
+	$stmt->execute();
+
+   
+
+$i=0;
+
+while($stmt->fetch()){
+
+
+$info[$i]['error']=false;
+$info[$i]['name']=$Teaching_Staff_Name;
+$info[$i]['content']=$Notification_Contents;
+$info[$i]['url']=$URL;
+$info[$i]['image']=$Image;
+$info[$i]['file']=$File;
+  
+
+$i++;
+
+
+
+}
+
+
+
+                                                       
+                                      }
+
+
+} 
+
+
+
+if($row['Student_Affairs_ID']!= null){
+
+                       
+             $stu_stmt3="SELECT student_affairs.userName from student_affairs where student_affairs.UserID=".$row['Student_Affairs_ID']."  and student_affairs.type  Not in ('youth_care','student_affairs') ";
+
+                         $result3 = mysqli_query($con, $stu_stmt3);
+                                          while($row = mysqli_fetch_assoc($result3)) {
+                                                       
+            
+                                           
+$stmt5=$con->prepare( "select notifiction.Notification_Contents, notifiction.URL ,notifiction.Image,notifiction.File ,student_affairs.userName as sender from notifiction join student_affairs join student_notification where notifiction.Notification_ID=student_notification.notification_id and student_notification.student_id=$id and notifiction.Student_Affairs_ID =student_affairs.UserID and student_affairs.type in ('youth_care','student_affairs') oRDER by notifiction.Notification_ID DESC ");
+          $stmt5->bind_result($Notification_Contents,$URL,$Image,$File,$sender);
+	  $stmt5->execute();
+
+echo($sender);
+
+$j=0;
+while($stmt5->fetch()){
+$info[$j]['error']=false;
+$info[$j]['name']=$sender;
+$info[$j]['content']=$Notification_Contents;
+$info[$j]['url']=$URL;
+$info[$j]['image']=$Image;
+$info[$j]['file']=$File;
+
+
+$j++;
+
+
+}
+
+
+}
+
+
+
+
+
+
+
+
+
+
+    
+
+}} }
+}
+
+
+}
+
+echo json_encode($info,JSON_UNESCAPED_UNICODE);
+
